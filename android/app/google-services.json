@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "633387691928",
+    "project_id": "gu-shu",
+    "storage_bucket": "gu-shu.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:633387691928:android:53dc760065bbcc58b785ed",
+        "android_client_info": {
+          "package_name": "com.gushu.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAc_8t54VK_iTFVIP9TKPDip_V9ynAis6c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
