@@ -194,6 +194,12 @@ export const markViewed = createServerFn({ method: "POST" })
         first_read_at: msgUpdate.data?.[0]?.first_read_at ?? msg.first_read_at,
       });
       await davVerifyUserViewRow(supabaseAdmin, data.messageId, userId);
+
+      // The recipient just viewed this DAV message. Run cleanup so that any
+      // participant who already left (e.g. the sender) immediately loses it
+      // — no need to wait for them to reopen the chat.
+      const { runDavCleanup } = await import("@/lib/dav-lifecycle-trace.server");
+      await runDavCleanup(supabaseAdmin, msg.conversation_id, userId);
     }
 
     return { ok: true };

@@ -141,3 +141,54 @@ export function logSqlResult(
     });
   }
 }
+
+/**
+ * Run the DAV cleanup RPC for a conversation, then remove any media objects
+ * belonging to permanently-deleted messages from Supabase Storage.
+ *
+ * The database function `cleanup_dav_messages` enforces the full spec:
+ *  - hides viewed DAV messages for participants not currently inside
+ *  - permanently deletes the message row when nobody is inside AND not saved
+ *  - returns the media_paths of deleted rows so we can clean Storage here
+ *
+ * Returns the raw RPC result { hidden_count, deleted_count, deleted_media_paths }.
+ */
+export async function runDavCleanup(
+  admin: { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: any; error: { message: string } | null }>; storage: { from: (bucket: string) => { remove: (paths: string[]) => Promise<{ error: { message: string } | null }> } } },
+  conversationId: string,
+  triggeringUserId: string,
+): Promise<{ hidden_count: number; deleted_count: number; deleted_media_paths: string[] }> {
+  const rpcRes = await admin.rpc("cleanup_dav_messages" as any, {
+    p_conv: conversationId,
+    p_triggering_user: triggeringUserId,
+  });
+
+  davTrace("STEP4_HANDLER", null, {
+    cleanup: "rpc",
+    conversationId,
+    triggeringUserId,
+    error: rpcRes.error?.message ?? null,
+    result: rpcRes.data ?? null,
+  });
+
+  if (rpcRes.error) throw new Error(`[runDavCleanup] RPC failed: ${rpcRes.error.message}`);
+
+  const result = (rpcRes.data ?? {}) as { hidden_count?: number; deleted_count?: number; deleted_media_paths?: string[] };
+  const mediaPaths = (result.deleted_media_paths ?? []).filter(Boolean);
+
+  if (mediaPaths.length > 0) {
+    const removeRes = await admin.storage.from("chat-media").remove(mediaPaths);
+    davTrace("STEP7_VERIFY", null, {
+      cleanup: "storage",
+      conversationId,
+      mediaPaths,
+      error: removeRes.error?.message ?? null,
+    });
+  }
+
+  return {
+    hidden_count: result.hidden_count ?? 0,
+    deleted_count: result.deleted_count ?? 0,
+    deleted_media_paths: mediaPaths,
+  };
+}

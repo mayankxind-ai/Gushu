@@ -7,7 +7,7 @@ import { getConversation } from "@/lib/conversations.functions";
 import { listMessages, markRead } from "@/lib/messages.functions";
 import { markViewed } from "@/lib/message-delete.functions";
 import { updatePresence, getTypingStatus } from "@/lib/presence.functions";
-import { getConversationSettings, verifyConversationSecretCode, updateLastExit } from "@/lib/conversation-settings.functions";
+import { getConversationSettings, verifyConversationSecretCode, updateLastExit, enterChat } from "@/lib/conversation-settings.functions";
 import { subscribeToMessageNotifications } from "@/lib/notification-service";
 import { ChatHeader } from "@/components/chat-header";
 import { MessageBubble } from "@/components/message-bubble";
@@ -304,13 +304,7 @@ function ChatPage() {
 
     const upsertPresence = async () => {
       try {
-        await supabase
-          .from("active_conversations" as any)
-          .upsert({
-            user_id: meId,
-            conversation_id: conversationId,
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'user_id' });
+        await enterChat({ data: { conversationId } });
       } catch (err) {
         // Presence upsert failed silently
       }
